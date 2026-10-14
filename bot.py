@@ -45,15 +45,11 @@ def main():
         return
 
 
-    proxy_url = os.environ.get("HTTP_PROXY") or "http://proxy.server:3128"
-    
-    app = (
-        Application.builder()
-        .token(token)
-        .get_updates_proxy_url(proxy_url)
-        .proxy_url(proxy_url)
-        .build()
-    )
+    proxy_url = os.environ.get("HTTP_PROXY")
+    builder = Application.builder().token(token)
+    if proxy_url:
+        builder = builder.proxy(proxy_url).get_updates_proxy(proxy_url)
+    app = builder.build()
     
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
