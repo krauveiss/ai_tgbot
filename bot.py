@@ -1,17 +1,15 @@
 import os
 import asyncio
+import openai
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-from openai import OpenAI
 
-client = OpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.environ.get("OPENROUTER_API_KEY"),
-)
+openai.api_key = os.environ.get("OPENROUTER_API_KEY")
+openai.api_base = "https://openrouter.ai/api/v1"
 
 SYSTEM_PROMPT = os.environ.get(
     "SYSTEM_PROMPT",
-    "Ты веселый участник чата.",
+    "Ты — полноправный и живой участник нашего группового чата в Telegram. Отвечай кратко, общайся непринужденно, с юмором и иронией."
 )
 
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -22,7 +20,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_name = update.message.from_user.first_name or "Участник"
 
     try:
-        response = client.chat.completions.create(
+        response = openai.ChatCompletion.create(
             model="google/gemini-2.5-flash:free",
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
@@ -31,7 +29,7 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
             max_tokens=300
         )
         
-        bot_reply = response.choices[0].message.content
+        bot_reply = response["choices"][0]["message"]["content"]
         if bot_reply:
             await update.message.reply_text(bot_reply)
 
@@ -45,7 +43,6 @@ def main():
         return
 
     app = Application.builder().token(token).build()
-
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
     print("Бот успешно запущен!")
