@@ -2,6 +2,7 @@ import os
 import asyncio
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+from telegram.request import HTTPXRequest
 from openai import OpenAI
 
 client = OpenAI(
@@ -45,11 +46,16 @@ def main():
         return
 
 
-    proxy_url = os.environ.get("HTTP_PROXY")
-    builder = Application.builder().token(token)
-    if proxy_url:
-        builder = builder.proxy(proxy_url).get_updates_proxy(proxy_url)
-    app = builder.build()
+    proxy_url = os.environ.get("TELEGRAM_PROXY_URL")
+    request = HTTPXRequest(proxy=proxy_url, httpx_kwargs={"trust_env": False})
+    updates_request = HTTPXRequest(proxy=proxy_url, httpx_kwargs={"trust_env": False})
+    app = (
+        Application.builder()
+        .token(token)
+        .request(request)
+        .get_updates_request(updates_request)
+        .build()
+    )
     
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_message))
     
